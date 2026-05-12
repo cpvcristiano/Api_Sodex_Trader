@@ -24,7 +24,8 @@ from sodex import SodexClient
 app = FastAPI()
 
 BOT_LOG    = Path(__file__).parent.parent / "bot.log"
-MAKER_FEE  = 0.00012
+MAKER_FEE  = 0.00012   # entrada + TP (limit)
+TAKER_FEE  = 0.00050   # SL / BE / saida manual (market)
 START_BAL  = 12.88
 
 # ── Airdrop config ─────────────────────────────────────────────────────────────
@@ -154,7 +155,7 @@ def parse_trades() -> list:
                     "pnl":      float(m.group(5)),
                     "volume":   vol,
                     "duration": int(m.group(7)),
-                    "fee":      vol * MAKER_FEE,
+                    "fee":      vol * (MAKER_FEE if m.group(2) == "TP" else (MAKER_FEE + TAKER_FEE) / 2),
                 })
     return trades
 

@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-05-03T02:31:54Z",
+  "project_root": "c:/Users/Cristiano/Documents/Api_Sodex_Trader",
+  "languages": [
+    { "name": "Python", "extensions": [".py"], "file_count": 13 },
+    { "name": "JSON", "extensions": [".json"], "file_count": 1 },
+    { "name": "Markdown", "extensions": [".md"], "file_count": 1 },
+    { "name": "HTML", "extensions": [".html"], "file_count": 1 }
+  ],
+  "primary_language": "Python",
+  "frameworks": [
+    { "name": "eth-account", "version": "0.11.3", "source": "requirements.txt" },
+    { "name": "eth-abi", "version": "5.0.1", "source": "requirements.txt" },
+    { "name": "web3", "version": "7.4.0", "source": "requirements.txt" },
+    { "name": "requests", "version": "2.32.3", "source": "requirements.txt" },
+    { "name": "python-dotenv", "version": "1.0.1", "source": "requirements.txt" },
+    { "name": "websockets", "version": "13.1", "source": "requirements.txt" }
+  ],
+  "package_manager": "pip",
+  "entry_points": [
+    { "path": "main.py", "type": "app_entry" },
+    { "path": "run_bot.py", "type": "app_entry" },
+    { "path": "run_dashboard.py", "type": "app_entry" },
+    { "path": "dashboard/server.py", "type": "server_entry" }
+  ],
+  "config_files": [
+    "config.py", ".env", ".gitignore"
+  ],
+  "database_hints": [
+    { "path": "sodex/models.py", "type": "orm_models" },
+    { "path": "sopoints.json", "type": "data_storage" }
+  ],
+  "modules": [
+    "sodex",
+    "strategy",
+    "dashboard"
+  ],
+  "total_files": 16
+}

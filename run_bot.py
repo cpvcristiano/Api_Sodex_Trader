@@ -152,10 +152,18 @@ def main() -> None:
     log.info(f"    Notional (25x)   : ${margin_trade:.2f} x 25 = ${notional_est:.2f}")
     log.info(f"    Volume/round trip: ${vol_per_trip:.2f}")
     log.info(f"    Para $100k vol   : ~{trades_needed} trades")
-    log.info(f"    TP: $0.50 (~0.62% mov.) | SL: $0.10 (~0.12% mov.)")
-    log.info(f"    R:R 5:1 | Break-even win rate: ~20%")
-    log.info(f"    EV @ 40% win     : ~+$0.12/trade")
-    log.info(f"    Fee/trade (est.) : ~${notional_est * cfg.maker_fee_pct * 2:.4f}")
+    fee_tp     = notional_est * cfg.maker_fee_pct * 2          # entrada+TP (ambos limit)
+    fee_sl     = notional_est * (cfg.maker_fee_pct + cfg.taker_fee_pct)  # entrada limit + SL market
+    fee_avg    = fee_tp * 0.30 + fee_sl * 0.70                 # media ponderada (30% win rate estimado)
+    rr         = cfg.tp_usd / cfg.sl_usd
+    be_winrate = (cfg.sl_usd + fee_avg) / (cfg.tp_usd + cfg.sl_usd) * 100
+    ev_30      = 0.30 * cfg.tp_usd - 0.70 * cfg.sl_usd - fee_avg
+    log.info(f"    TP: ${cfg.tp_usd:.2f} | SL: ${cfg.sl_usd:.2f} | R:R {rr:.1f}:1")
+    log.info(f"    Taxa TP (maker+maker) : ~${fee_tp:.4f}")
+    log.info(f"    Taxa SL (maker+taker) : ~${fee_sl:.4f}")
+    log.info(f"    Taxa media ponderada  : ~${fee_avg:.4f}")
+    log.info(f"    Break-even win rate   : ~{be_winrate:.1f}%")
+    log.info(f"    EV @ 30% win          : ~{ev_30:+.4f}/trade")
     log.info("-" * 58)
     log.info("  AVISO: BTC na Sodex suporta max 25x (nao 40x).")
     log.info("  O bot usa 25x - o maximo disponivel.")

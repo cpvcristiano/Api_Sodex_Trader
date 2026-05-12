@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-05-03T02:34:40Z",
+  "modules": [
+    {
+      "name": "sodex",
+      "purpose": "Comunicação com a API Sodex e assinatura EIP-712",
+      "files": ["client.py", "models.py", "signing.py"],
+      "entities": ["OrderSide", "OrderType", "TimeInForce", "SodexClient"],
+      "dependencies": ["requests", "eth-account", "web3"]
+    },
+    {
+      "name": "strategy",
+      "purpose": "Lógica de scalping e gestão de trades",
+      "files": ["scalper.py", "tracker.py"],
+      "algorithms": ["EMA Cross 9/17", "SMC Premium/Discount", "Order Book Imbalance"],
+      "entities": ["Trade", "VolumeTracker", "ScalpConfig"]
+    },
+    {
+      "name": "dashboard",
+      "purpose": "Backend e frontend de monitoramento",
+      "files": ["server.py", "index.html"],
+      "technologies": ["FastAPI", "WebSocket", "Uvicorn"],
+      "features": ["Log Parsing", "Real-time PnL/Volume Tracking"]
+    }
+  ]
+}

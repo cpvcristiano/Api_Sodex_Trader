@@ -82,8 +82,9 @@ class ScalpConfig:
     # Ex: 23 = para as 23:00 UTC = 20:00 horario de Brasilia (BRT = UTC-3)
     stop_hour_utc: Optional[int] = None
 
-    # Taxa maker (0.012% por lado)
-    maker_fee_pct: float = 0.00012
+    # Taxas reais da Sodex
+    maker_fee_pct: float = 0.00012   # 0.012% — ordens LIMIT (entrada e TP)
+    taker_fee_pct: float = 0.00050   # 0.050% — ordens MARKET (SL, BE, saida manual)
 
 
 # ─── Bot principal ────────────────────────────────────────────────────────────
@@ -970,7 +971,15 @@ class ScalpingBot:
                     if direction == OrderSide.BUY
                     else (fill_px - exit_px) * qty_f
                 )
-                fees    = notional_f * self.cfg.maker_fee_pct * 2
+                # Entrada sempre LIMIT (maker). Saida depende do tipo:
+                #   TP  -> LIMIT (maker)
+                #   SL / BE / MANUAL -> MARKET (taker)
+                fee_entry = notional_f * self.cfg.maker_fee_pct
+                if result == "TP":
+                    fee_exit = notional_f * self.cfg.maker_fee_pct
+                else:
+                    fee_exit = notional_f * self.cfg.taker_fee_pct
+                fees    = fee_entry + fee_exit
                 net_pnl = raw_pnl - fees
                 dur_s   = time.time() - ts_start
 

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "startedAt": null,
+  "lastCheckpoint": null,
+  "completedAgents": [],
+  "pendingAgents": [
+    "paradigm_advisor",
+    "curator",
+    "strategist",
+    "designer",
+    "inspector"
+  ],
+  "currentAgent": null,
+  "pendingDecisions": [],
+  "artifacts": {},
+  "auto": false,
+  "engine": null,
+  "reversaVersion": "{{VERSION}}",
+  "briefPath": "_reversa_sdd/migration/migration_brief.md",
+  "expectedLegacyArtifacts": "references/expected_legacy_artifacts.yaml"
+}
