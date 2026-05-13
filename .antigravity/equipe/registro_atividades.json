@@ -1,0 +1,34 @@
+{
+  "atividades": [
+    {
+      "id": "ANALISE_LEGADO",
+      "status": "CONCLUIDO",
+      "agente": "Explorador",
+      "descricao": "Análise completa do bot Sodex e mapeamento de dependências."
+    },
+    {
+      "id": "AVALIACAO_ARQUITETURA",
+      "status": "CONCLUIDO",
+      "agente": "Projetista",
+      "descricao": "Geração do architecture.md com score e dívidas técnicas."
+    },
+    {
+      "id": "CRIACAO_SKILL_TRADER",
+      "status": "CONCLUIDO",
+      "agente": "Condutor",
+      "descricao": "Implementação da skill-trader em .claude/skills/."
+    },
+    {
+      "id": "SPEC_RECONSTRUCAO",
+      "status": "CONCLUIDO",
+      "agente": "Projetista",
+      "descricao": "Criação da spec para desacoplamento de estratégia."
+    },
+    {
+      "id": "REFATORACAO_ASYNC",
+      "status": "PENDENTE",
+      "agente": "Executor",
+      "descricao": "Migrar bot para padrão assíncrono (asyncio)."
+    }
+  ]
+}

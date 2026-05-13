@@ -1,0 +1,42 @@
+19:07:39  INFO     ==========================================================
+19:07:39  INFO       SODEX BTC SCALPER - 03/05/2026 22:07 UTC
+19:07:39  INFO     ==========================================================
+19:07:39  INFO       Wallet  : 0xDd7d870235aef1DB4BC6523620a3421a661C877A
+19:07:39  INFO       API Key : 0xD7D626288D5d5651dca0B49BcFa1bF5e7f4E5228
+19:07:39  INFO       Conta   : #6692
+19:07:39  INFO     ----------------------------------------------------------
+19:07:40  INFO       Saldo total    : $28.7168 vUSDC
+19:07:40  INFO       Margem livres  : $28.7168 vUSDC
+19:07:40  INFO       Posicoes abertas: 0
+19:07:40  INFO       Ordens abertas  : 0
+19:07:40  INFO     ----------------------------------------------------------
+19:07:40  INFO       PROJECAO COM $28.72 DEPOSITADOS:
+19:07:40  INFO         Margem por trade : $28.72 x 25% = $14.36
+19:07:40  INFO         Notional (25x)   : $14.36 x 25 = $358.96
+19:07:40  INFO         Volume/round trip: $717.92
+19:07:40  INFO         Para $100k vol   : ~139 trades
+19:07:40  INFO         TP: $0.80 | SL: $0.20 | R:R 4.0:1
+19:07:40  INFO         Taxa TP (maker+maker) : ~$0.0862
+19:07:40  INFO         Taxa SL (maker+taker) : ~$0.2226
+19:07:40  INFO         Taxa media ponderada  : ~$0.1816
+19:07:40  INFO         Break-even win rate   : ~38.2%
+19:07:40  INFO         EV @ 30% win          : ~-0.0816/trade
+19:07:40  INFO     ----------------------------------------------------------
+19:07:40  INFO       AVISO: BTC na Sodex suporta max 25x (nao 40x).
+19:07:40  INFO       O bot usa 25x - o maximo disponivel.
+19:07:40  INFO     ==========================================================
+19:07:40  INFO       Leverage BTC-USD configurado: 25x CROSS
+19:07:40  INFO     ==========================================================
+19:07:40  INFO       SODEX BTC SCALPER - 24H AIRDROP BOT
+19:07:40  INFO       Par       : BTC-USD
+19:07:40  INFO       Sizing    : 50% margem x 25x leverage
+19:07:40  INFO       TP / SL   : $0.80 / $0.20 (fixo em USD)
+19:07:40  INFO       Meta vol  : $100,000
+19:07:40  INFO     ==========================================================
+19:07:41  INFO     [REGIME] RANGE: ATR 0.15%<0.15% (range)
+19:07:41  INFO     [REGIME] Mercado lateral — dormindo 5min sem operar
+19:12:42  INFO     [REGIME] ADX=31.9  ATR=125(0.16%)
+19:12:43  INFO     [5min] EMA9=78,904.3  EMA17=78,874.4  preco=79,080.1  -> LONG
+19:12:43  INFO     [1min] EMA9=78,988.1  EMA17=78,936.2  preco=79,070.1  -> LONG
+19:12:44  INFO     [SMC] zona=PREMIUM(71.7%) struct=None range=[78609-79266] OB_bull=[78617-78669] OB_bear=N/A FVG_bull=[78820-78888] FVG_bear=N/A
+19:12:44  INFO     [SMC] LONG bloqueado: zona PREMIUM(71.7%) sem confluencia de demanda
