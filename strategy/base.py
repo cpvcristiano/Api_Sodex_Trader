@@ -9,7 +9,7 @@ class BaseStrategy(ABC):
     """
 
     @abstractmethod
-    def analyze(self, market_data: dict) -> Tuple[Optional[OrderSide], float]:
+    def analyze(self, market_data: dict) -> Tuple[Optional[OrderSide], float, dict]:
         """
         Analisa os dados de mercado e retorna uma sugestão de entrada.
         
@@ -17,7 +17,7 @@ class BaseStrategy(ABC):
             market_data: Dicionário contendo preços, indicadores e sinais externos.
             
         Returns:
-            Tuple[Optional[OrderSide], float]: (Lado da ordem, Preço sugerido)
+            Tuple[Optional[OrderSide], float, dict]: (Lado da ordem, Preço sugerido, Metadados da decisão)
         """
         pass
 

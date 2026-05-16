@@ -141,11 +141,21 @@ class HybridSMCStrategy(BaseStrategy):
             log.warning(f"[SMC-{interval}] {e}")
         return out
 
-    def analyze(self, market_data: dict) -> Tuple[Optional[OrderSide], float]:
+    def analyze(self, market_data: dict) -> Tuple[Optional[OrderSide], float, dict]:
+        metadata = {"reason": "none", "signals": {}}
+        
         # ── Sinal 5min ────────────────────────────────────────────────────────
         sig5 = self._ema_signals("5m")
+        metadata["signals"]["ema5"] = {
+            "dir": str(sig5["direction"]),
+            "ema9": sig5["ema9"],
+            "ema17": sig5["ema17"],
+            "price": sig5["price"]
+        }
+        
         if not sig5["ok"]:
-            return None, self._mark_price()
+            metadata["reason"] = "ema5_data_error"
+            return None, self._mark_price(), metadata
 
         trend = sig5["direction"]
         t5_label = "LONG" if trend == OrderSide.BUY else "SHORT" if trend == OrderSide.SELL else "LATERAL"
@@ -153,51 +163,63 @@ class HybridSMCStrategy(BaseStrategy):
         log.info(f"[5min] EMA: {t5_label} | Price={sig5['price']:,.2f} | Sep={sep5:.3f}%")
 
         if trend is None:
-            return None, sig5["price"]
+            metadata["reason"] = "ema5_no_trend"
+            return None, sig5["price"], metadata
 
         if sep5 < 0.01:
             log.info(f"[EMA-FLAT] Separacao {sep5:.3f}% < 0.01% — bloqueado")
-            return None, sig5["price"]
+            metadata["reason"] = "ema5_flat"
+            return None, sig5["price"], metadata
 
-        # ── Filtro 1H: so opera se tendencia maior confirma ───────────────────
+        # ── Filtro 1H ─────────────────────────────────────────────────────────
+        LATERAL_THRESHOLD_1H = 0.025
         sig1h = self._ema_signals("1h")
         if sig1h["ok"]:
             trend1h = sig1h["direction"]
-            t1h = "LONG" if trend1h == OrderSide.BUY else "SHORT" if trend1h == OrderSide.SELL else "LATERAL"
             sep1h = abs(sig1h["ema9"] - sig1h["ema17"]) / sig1h["price"] * 100
+            t1h = "LONG" if trend1h == OrderSide.BUY else "SHORT" if trend1h == OrderSide.SELL else "LATERAL"
+            metadata["signals"]["ema1h"] = {"dir": t1h, "sep": sep1h}
+            
             log.info(f"[1H]   EMA: {t1h} | EMA9={sig1h['ema9']:,.0f} EMA17={sig1h['ema17']:,.0f} | Sep={sep1h:.3f}%")
 
-            if trend1h != trend:
-                motivo = "LATERAL no 1H" if trend1h is None else f"1H={t1h} oposto ao 5min={t5_label}"
-                log.info(f"[1H FILTER] BLOQUEOU — {motivo}")
-                return None, sig5["price"]
-
-            log.info(f"[1H FILTER] CONFIRMOU — 5min={t5_label} alinhado com 1H={t1h}")
+            if sep1h < LATERAL_THRESHOLD_1H:
+                log.info(f"[1H FILTER] LATERAL ({sep1h:.3f}% < {LATERAL_THRESHOLD_1H}%) — 5min decide: {t5_label}")
+            elif trend1h != trend:
+                log.info(f"[1H FILTER] BLOQUEOU — 1H={t1h} ({sep1h:.3f}%) oposto ao 5min={t5_label}")
+                metadata["reason"] = f"1h_filter_blocked_{t1h}"
+                return None, sig5["price"], metadata
+            else:
+                log.info(f"[1H FILTER] CONFIRMOU — 5min={t5_label} alinhado com 1H={t1h} ({sep1h:.3f}%)")
         else:
             log.warning("[1H FILTER] Dados indisponiveis — prosseguindo sem filtro 1H")
+            metadata["signals"]["ema1h"] = {"error": "unavailable"}
 
         # ── Filtro SMC ─────────────────────────────────────────────────────────
         smc = self._smc_signals("5m")
         if smc["ok"]:
+            metadata["signals"]["smc"] = {
+                "zone": smc["zone"],
+                "pct": smc["zone_pct"],
+                "struct": smc["structure"]
+            }
             log.info(f"[SMC] Zona: {smc['zone']} ({smc['zone_pct']}%) | Struct: {smc['structure']}")
             if trend == OrderSide.BUY and smc["zone"] == "PREMIUM" and smc["structure"] == "BEARISH" and smc["ob_bear"]:
                 log.info("[SMC] LONG bloqueado: PREMIUM + BEARISH + OB bearish confirmados")
-                return None, sig5["price"]
+                metadata["reason"] = "smc_blocked_long_premium"
+                return None, sig5["price"], metadata
             if trend == OrderSide.SELL and smc["zone"] == "DISCOUNT" and smc["structure"] == "BULLISH" and smc["ob_bull"]:
                 log.info("[SMC] SHORT bloqueado: DISCOUNT + BULLISH + OB bullish confirmados")
-                return None, sig5["price"]
+                metadata["reason"] = "smc_blocked_short_discount"
+                return None, sig5["price"], metadata
 
         log.info(f"[ALINHADO] 5min + 1H confirmados -> Operando {t5_label}")
-        return trend, sig5["price"]
+        metadata["reason"] = "aligned"
+        return trend, sig5["price"], metadata
 
     def get_tp_sl(self, fill_price: float, qty: float, notional: float) -> Tuple[float, float]:
         tp_move = self.cfg.tp_usd / qty
         sl_move = self.cfg.sl_usd / qty
         return tp_move, sl_move
 
-    def check_exit(self, side: OrderSide, current_data: dict) -> bool:
-        sig = self._ema_signals("1m")
-        if not sig["ok"]:
-            return False
-        return (side == OrderSide.BUY and sig["cross_bear"]) or \
-               (side == OrderSide.SELL and sig["cross_bull"])
+    def check_exit(self, _side: OrderSide, _current_data: dict) -> bool:
+        return False

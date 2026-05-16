@@ -72,8 +72,8 @@ cfg.step_size       = 0.001
 # Sizing: 50% da margem disponivel por trade
 cfg.margin_pct  = 0.50
 
-# BTC-USD 25x | TP=$1.50 R:R 7.5:1 | Break-even WR ~11.8%
-cfg.tp_usd = 1.50            # lucro alvo por trade
+# SOL-USD 20x | TP=$1.00 R:R 5:1 | Break-even WR ~16.7%
+cfg.tp_usd = 1.00            # lucro alvo por trade
 cfg.sl_usd = 0.20            # stop loss por trade
 
 # Analise de entrada: ~30s simulando ritmo de grafico 1-minuto
@@ -156,7 +156,7 @@ def main() -> None:
     # TP e SL FIXOS em dolar — mais TPs alcancaveis, melhor WR
     # Simulacao mostrou: com $50 conta WR=16.9% (vs 0% do dinamico)
     # Break-even: 20.6% WR — filtro 1H deve empurrar acima disso
-    cfg.tp_usd = 1.50
+    cfg.tp_usd = 1.00
     cfg.sl_usd = 0.20
 
     # Limites DINAMICOS (escalam com caixa para proteger proporcionalmente)

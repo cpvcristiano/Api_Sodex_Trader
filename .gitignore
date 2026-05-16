@@ -34,3 +34,9 @@ sopoints.json
 .vscode/
 .idea/
 .claude/
+.antigravity/
+
+# Data and Scratch
+data/
+scratch/
+data_test/

@@ -65,8 +65,13 @@ class TraderEngine:
         self.account_id = account_id
         self.strategy = strategy
         self.cfg = config or ScalpConfig()
-        self.tracker = VolumeTracker(self.cfg.weekly_target_usd)
+        import os
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.tracker = VolumeTracker(self.cfg.weekly_target_usd, data_dir=os.path.join(project_root, "data"))
         self._running = False
+        
+        # Sincroniza meta com o tracker
+        self.tracker.save_state()
 
     def _px(self, price: float) -> str:
         dec = Decimal(str(price)).quantize(
@@ -241,11 +246,17 @@ class TraderEngine:
     def _wait_close(self, tp_cl: str, sl_cl: str, fill: float, side: OrderSide, qty: str) -> tuple[str, float]:
         deadline = time.time() + self.cfg.position_timeout_s
         qty_f = float(qty)
-        tp_usd = self.cfg.tp_usd  # ex: $1.00
+        tp_usd = self.cfg.tp_usd
+        sl_usd = self.cfg.sl_usd
+
+        # Precos de TP e SL — atualizados quando trailing stops movem o SL
+        tp_price = fill + tp_usd / qty_f if side == OrderSide.BUY else fill - tp_usd / qty_f
+        current_sl_price = fill - sl_usd / qty_f if side == OrderSide.BUY else fill + sl_usd / qty_f
 
         trail0_triggered = False  # 30% TP → SL para break-even ($0.00)
         trail1_triggered = False  # 55% TP → SL para +30% TP
         trail2_triggered = False  # 80% TP → SL para +60% TP
+        mark = fill  # ultimo mark price conhecido
 
         while True:
             time.sleep(self.cfg.poll_s)
@@ -253,16 +264,28 @@ class TraderEngine:
             pos = self._get_position()
             if pos is None:
                 open_cls = {o.get("c") for o in self._open_orders()}
-                if tp_cl not in open_cls:
-                    if sl_cl in open_cls: self._cancel(sl_cl)
-                    return "TP", (fill + tp_usd / qty_f if side == OrderSide.BUY else fill - tp_usd / qty_f)
-                if sl_cl not in open_cls:
-                    if tp_cl in open_cls: self._cancel(tp_cl)
-                    label = "TRAIL2" if trail2_triggered else ("TRAIL1" if trail1_triggered else ("TRAIL0" if trail0_triggered else "SL"))
-                    return label, fill
-                return "MANUAL", fill
+                tp_open = bool(tp_cl) and tp_cl in open_cls
+                sl_open = bool(sl_cl) and sl_cl in open_cls
 
-            mark = fill
+                if sl_open and not tp_open:
+                    # TP executou, SL ainda pendente — cancela SL
+                    self._cancel(sl_cl)
+                    return "TP", tp_price
+
+                if tp_open and not sl_open:
+                    # SL executou, TP ainda pendente — cancela TP
+                    self._cancel(tp_cl)
+                    label = "TRAIL2" if trail2_triggered else ("TRAIL1" if trail1_triggered else ("TRAIL0" if trail0_triggered else "SL"))
+                    return label, current_sl_price
+
+                # Ambos sumidos (OCO cancelou o outro) — usa mark para distinguir
+                mid = (tp_price + current_sl_price) / 2
+                hit_tp = (mark > mid) if side == OrderSide.BUY else (mark < mid)
+                if hit_tp:
+                    return "TP", tp_price
+                label = "TRAIL2" if trail2_triggered else ("TRAIL1" if trail1_triggered else ("TRAIL0" if trail0_triggered else "SL"))
+                return label, current_sl_price
+
             try:
                 state = self.client.perps_account_state()
                 for p in (state.get("P") or []):
@@ -285,6 +308,7 @@ class TraderEngine:
                 if sl_cl: self._cancel(sl_cl)
                 new_cl = self._place_sl(side, lock_price, qty)
                 if new_cl: sl_cl = new_cl
+                current_sl_price = lock_price
                 trail2_triggered = True
                 log.info(f"[TRAIL-2] {pnl_usd:+.3f} (80% TP) → SL travado em +${tp_usd*0.60:.2f} @ {lock_price:.2f}")
 
@@ -294,6 +318,7 @@ class TraderEngine:
                 if sl_cl: self._cancel(sl_cl)
                 new_cl = self._place_sl(side, lock_price, qty)
                 if new_cl: sl_cl = new_cl
+                current_sl_price = lock_price
                 trail1_triggered = True
                 log.info(f"[TRAIL-1] {pnl_usd:+.3f} (55% TP) → SL travado em +${tp_usd*0.30:.2f} @ {lock_price:.2f}")
 
@@ -303,6 +328,7 @@ class TraderEngine:
                 if sl_cl: self._cancel(sl_cl)
                 new_cl = self._place_sl(side, lock_price, qty)
                 if new_cl: sl_cl = new_cl
+                current_sl_price = lock_price
                 trail0_triggered = True
                 log.info(f"[TRAIL-0] {pnl_usd:+.3f} (30% TP) → SL break-even @ {lock_price:.2f}")
 
@@ -339,6 +365,10 @@ class TraderEngine:
                         result, exit_px = self._wait_close(tp_cl_ex, sl_cl_ex, fill_ex, side_ex, qty_ex)
                         notional_f = float(qty_ex) * fill_ex
                         pnl = (exit_px - fill_ex) * float(qty_ex) if side_ex == OrderSide.BUY else (fill_ex - exit_px) * float(qty_ex)
+                        trade = Trade(id=f"rec-{int(time.time())}", symbol=self.cfg.symbol_name, side=side_ex.name,
+                                      entry_price=fill_ex, exit_price=exit_px, quantity=float(qty_ex),
+                                      notional=notional_f, pnl=pnl, fees=0, duration_s=0, result=result)
+                        self.tracker.add_trade(trade)
                         log.info(f"[RESULT] {result} PnL={pnl:+.4f} (posicao recuperada)")
                     else:
                         time.sleep(10)
@@ -354,7 +384,16 @@ class TraderEngine:
                     time.sleep(_entry_backoff)
                     _entry_backoff = 0.0
 
-                direction, price = self.strategy.analyze({})
+                direction, price, metadata = self.strategy.analyze({})
+                
+                # Loga a decisão mesmo se for nula (bloqueio ou sem sinal)
+                self.tracker.log_decision({
+                    "symbol": self.cfg.symbol_name,
+                    "direction": str(direction),
+                    "price": price,
+                    **metadata
+                })
+
                 if direction is None:
                     time.sleep(5); continue
 
